@@ -1,0 +1,908 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   Instrument QR Lookup
+
+   Grounded in the physical object: every instrument carries a data plate
+   riveted to it, so the detail page mirrors that plate. The nameplate is the
+   one bold element. Everything else stays quiet.
+
+   Light background throughout — these phones get used under bright shop-floor
+   lighting, where a dark screen is a mirror.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --bg: #ecebe6;
+  --surface: #ffffff;
+  --surface-sunk: #f5f4f0;
+  --line: #d8d6cf;
+  --line-strong: #b9b6ad;
+  --ink: #17181a;
+  --ink-mid: #4a4d52;
+  --ink-soft: #74777d;
+
+  --ok-fg: #12683a;
+  --ok-bg: #e4f0e7;
+  --ok-line: #a9cdb5;
+  --soon-fg: #8a5200;
+  --soon-bg: #fbeed6;
+  --soon-line: #e0c288;
+  --over-fg: #a01f18;
+  --over-bg: #fadedb;
+  --over-line: #e5aaa4;
+  --unknown-fg: #5f6368;
+  --unknown-bg: #eceae5;
+  --unknown-line: #cdcac2;
+
+  --plate-face: linear-gradient(158deg, #e8e7e2 0%, #cfcec8 44%, #dbdad5 56%, #c4c3bc 100%);
+  --plate-edge: #a5a49d;
+
+  --stamp: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --stamp-stretch: 125%; /* Archivo's expanded cut, via the wdth axis */
+  --mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: 'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(23, 24, 26, 0.05), 0 8px 24px -18px rgba(23, 24, 26, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+/* ── Shell ───────────────────────────────────────────────────────────────── */
+
+.shell {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 0 1rem 4rem;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar-mark {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.topbar-mark strong {
+  font-family: var(--stamp);
+  font-stretch: var(--stamp-stretch);
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.topbar-mark span {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.topbar-nav {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.topbar-nav a {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  text-decoration: none;
+  color: var(--ink-mid);
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+}
+
+.topbar-nav a:hover {
+  background: var(--surface);
+}
+
+.topbar-nav a.active {
+  background: var(--ink);
+  color: #fff;
+}
+
+/* ── Type ────────────────────────────────────────────────────────────────── */
+
+.page-title {
+  font-family: var(--stamp);
+  font-stretch: var(--stamp-stretch);
+  font-weight: 700;
+  font-size: clamp(1.35rem, 4vw, 1.85rem);
+  letter-spacing: -0.01em;
+  margin: 0 0 0.25rem;
+}
+
+.page-sub {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  margin: 0 0 1.5rem;
+}
+
+.section-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0 0 0.6rem;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── The nameplate ───────────────────────────────────────────────────────
+   A riveted equipment plate. It mirrors the object the technician is
+   physically standing in front of.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.nameplate {
+  position: relative;
+  border: 1px solid var(--plate-edge);
+  border-radius: 12px;
+  padding: clamp(1.5rem, 7vw, 2.75rem) clamp(1.25rem, 6vw, 2.5rem);
+  background-image:
+    radial-gradient(circle at 15px 15px, #8d8c86 0 2.5px, #b7b6b0 2.5px 5px, rgba(0, 0, 0, 0) 5.5px),
+    radial-gradient(circle at calc(100% - 15px) 15px, #8d8c86 0 2.5px, #b7b6b0 2.5px 5px, rgba(0, 0, 0, 0) 5.5px),
+    radial-gradient(circle at 15px calc(100% - 15px), #8d8c86 0 2.5px, #b7b6b0 2.5px 5px, rgba(0, 0, 0, 0) 5.5px),
+    radial-gradient(circle at calc(100% - 15px) calc(100% - 15px), #8d8c86 0 2.5px, #b7b6b0 2.5px 5px, rgba(0, 0, 0, 0) 5.5px),
+    repeating-linear-gradient(
+      92deg,
+      rgba(255, 255, 255, 0.16) 0 1px,
+      rgba(0, 0, 0, 0.025) 1px 2px,
+      rgba(0, 0, 0, 0) 2px 4px
+    ),
+    var(--plate-face);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.14),
+    0 10px 26px -16px rgba(23, 24, 26, 0.5);
+}
+
+.plate-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #6c6b65;
+  margin-bottom: 0.5rem;
+}
+
+.plate-code {
+  font-family: var(--stamp);
+  font-stretch: var(--stamp-stretch);
+  font-weight: 800;
+  font-size: clamp(2.75rem, 17vw, 5.5rem);
+  line-height: 0.92;
+  letter-spacing: 0.01em;
+  color: #26272a;
+  margin: 0;
+  word-break: break-all;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6),
+    0 -1px 1px rgba(0, 0, 0, 0.22);
+}
+
+.plate-name {
+  font-family: var(--stamp);
+  font-stretch: var(--stamp-stretch);
+  font-weight: 600;
+  font-size: clamp(0.95rem, 3.6vw, 1.2rem);
+  letter-spacing: 0.02em;
+  color: #3a3b3e;
+  margin: 0.6rem 0 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.14);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55) inset;
+}
+
+/* ── Due-date status ─────────────────────────────────────────────────────
+   The one place colour carries meaning: overdue must be unambiguous.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.due-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.due-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0.85rem 0.9rem;
+  border-left-width: 4px;
+}
+
+.due-card .due-label {
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.due-card .due-when {
+  font-family: var(--stamp);
+  font-stretch: var(--stamp-stretch);
+  font-weight: 700;
+  font-size: clamp(0.95rem, 3.4vw, 1.15rem);
+  margin-top: 0.3rem;
+  line-height: 1.2;
+}
+
+.due-card .due-date {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--ink-mid);
+  margin-top: 0.2rem;
+}
+
+.lv-ok {
+  border-left-color: var(--ok-line);
+}
+.lv-ok .due-when {
+  color: var(--ok-fg);
+}
+.lv-soon {
+  border-left-color: var(--soon-line);
+}
+.lv-soon .due-when {
+  color: var(--soon-fg);
+}
+.lv-overdue {
+  border-left-color: var(--over-line);
+}
+.lv-overdue .due-when {
+  color: var(--over-fg);
+}
+.lv-unknown {
+  border-left-color: var(--unknown-line);
+}
+.lv-unknown .due-when {
+  color: var(--unknown-fg);
+}
+
+.headline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid;
+}
+
+.headline-badge::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.badge-ok {
+  color: var(--ok-fg);
+  background: var(--ok-bg);
+  border-color: var(--ok-line);
+}
+.badge-soon {
+  color: var(--soon-fg);
+  background: var(--soon-bg);
+  border-color: var(--soon-line);
+}
+.badge-overdue {
+  color: var(--over-fg);
+  background: var(--over-bg);
+  border-color: var(--over-line);
+}
+.badge-unknown {
+  color: var(--unknown-fg);
+  background: var(--unknown-bg);
+  border-color: var(--unknown-line);
+}
+
+/* ── Spec grid ───────────────────────────────────────────────────────────
+   Dotted leaders, the way a parts catalogue sets a spec sheet.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.1rem 1.15rem;
+}
+
+.spec-list {
+  margin: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.spec-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.spec-row dt {
+  font-size: 0.85rem;
+  color: var(--ink-mid);
+  flex-shrink: 0;
+}
+
+.spec-leader {
+  flex: 1 1 auto;
+  min-width: 1.5rem;
+  border-bottom: 1px dotted var(--line-strong);
+  transform: translateY(-0.28rem);
+}
+
+.spec-row dd {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: right;
+  flex-shrink: 0;
+  max-width: 60%;
+}
+
+.spec-row dd.is-block {
+  max-width: 100%;
+}
+
+/* Long free text (fault history) reads better stacked than right-aligned. */
+.spec-block {
+  display: block;
+}
+
+.spec-block dt {
+  font-size: 0.85rem;
+  color: var(--ink-mid);
+  margin-bottom: 0.2rem;
+}
+
+.spec-block dd {
+  margin: 0;
+  font-size: 0.9rem;
+  text-align: left;
+  max-width: 100%;
+  white-space: pre-wrap;
+}
+
+/* ── Index ───────────────────────────────────────────────────────────────── */
+
+.search-row {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  outline: 2px solid var(--ink);
+  outline-offset: -1px;
+}
+
+.input.is-invalid,
+.textarea.is-invalid {
+  border-color: var(--over-line);
+  background: #fffafa;
+}
+
+.textarea {
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
+.list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.8rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.08s ease, box-shadow 0.12s ease;
+}
+
+.list-item:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+.list-code {
+  font-family: var(--stamp);
+  font-stretch: var(--stamp-stretch);
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+  min-width: 3.5rem;
+  flex-shrink: 0;
+}
+
+.list-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.list-name {
+  display: block;
+  font-weight: 500;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-meta {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  margin-top: 0.15rem;
+}
+
+.list-status {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-align: right;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--surface-sunk);
+}
+
+.btn-primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #2c2e31;
+}
+
+.btn-danger {
+  color: var(--over-fg);
+  border-color: var(--over-line);
+  background: var(--over-bg);
+}
+
+.btn-danger:hover {
+  background: #f6cec9;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ── Forms ───────────────────────────────────────────────────────────────── */
+
+.field {
+  margin-bottom: 1rem;
+}
+
+.field label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+}
+
+.field .req {
+  color: var(--over-fg);
+  margin-left: 0.15rem;
+}
+
+.field-hint {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  margin-top: 0.25rem;
+}
+
+.field-error {
+  font-size: 0.78rem;
+  color: var(--over-fg);
+  margin-top: 0.25rem;
+}
+
+.input-suffix {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.input-suffix .mono-suffix {
+  font-family: var(--mono);
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.form-grid {
+  display: grid;
+  gap: 0 1rem;
+  grid-template-columns: 1fr;
+}
+
+/* ── Notices ─────────────────────────────────────────────────────────────── */
+
+.notice {
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  background: var(--surface);
+}
+
+.notice-info {
+  border-left-color: var(--line-strong);
+  background: var(--surface-sunk);
+  color: var(--ink-mid);
+}
+
+.notice-warn {
+  border-left-color: var(--soon-line);
+  background: var(--soon-bg);
+  color: var(--soon-fg);
+}
+
+.notice-good {
+  border-left-color: var(--ok-line);
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+}
+
+.notice-bad {
+  border-left-color: var(--over-line);
+  background: var(--over-bg);
+  color: var(--over-fg);
+}
+
+.notice strong {
+  font-weight: 600;
+}
+
+.notice code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.05rem 0.25rem;
+  border-radius: 4px;
+}
+
+/* ── QR page ─────────────────────────────────────────────────────────────── */
+
+.qr-stack {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+.qr-frame {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: var(--shadow);
+}
+
+.qr-frame canvas,
+.qr-frame img {
+  display: block;
+  width: 100%;
+  max-width: 15rem;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  image-rendering: pixelated;
+}
+
+.qr-caption {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  text-align: center;
+  word-break: break-all;
+}
+
+.url-preview {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  word-break: break-all;
+  color: var(--ink-mid);
+}
+
+/* ── Admin table ─────────────────────────────────────────────────────────── */
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+table.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.admin-table th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 500;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.admin-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--surface-sunk);
+  white-space: nowrap;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-table td.wrap {
+  white-space: normal;
+  min-width: 12rem;
+}
+
+.tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-soft);
+  background: var(--surface-sunk);
+}
+
+/* ── Empty / error states ────────────────────────────────────────────────── */
+
+.empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--ink-soft);
+}
+
+.empty .empty-code {
+  font-family: var(--stamp);
+  font-stretch: var(--stamp-stretch);
+  font-weight: 800;
+  font-size: 2.5rem;
+  color: var(--line-strong);
+  margin-bottom: 0.5rem;
+}
+
+.stack {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.footnote {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+/* ── Wider screens ───────────────────────────────────────────────────────── */
+
+@media (min-width: 44rem) {
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .form-grid .span-2 {
+    grid-column: span 2;
+  }
+  .qr-stack {
+    grid-template-columns: 18rem 1fr;
+  }
+  .detail-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    align-items: start;
+  }
+}
+
+@media print {
+  .topbar,
+  .btn,
+  .footnote {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}
+
+/* Status colour on index rows and list meta. */
+.list-status.lv-ok {
+  color: var(--ok-fg);
+}
+.list-status.lv-soon {
+  color: var(--soon-fg);
+}
+.list-status.lv-overdue {
+  color: var(--over-fg);
+}
+.list-status.lv-unknown {
+  color: var(--unknown-fg);
+}
+
+/* The generic .lv-* rules set border-left-color, but .list-item's own
+   `border: 1px solid var(--line)` shorthand is declared later and resets it.
+   These raise specificity so the status colour survives on index rows. */
+.list-item.lv-ok {
+  border-left-color: var(--ok-line);
+}
+.list-item.lv-soon {
+  border-left-color: var(--soon-line);
+}
+.list-item.lv-overdue {
+  border-left-color: var(--over-line);
+}
+.list-item.lv-unknown {
+  border-left-color: var(--unknown-line);
+}
+
+/* ── Narrow-phone polish ─────────────────────────────────────────────────
+   At 390px the topbar wrapped onto two lines and index dates broke
+   mid-value. Both are cramped-width problems, not layout problems.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.list-meta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 26rem) {
+  /* The record count is a nicety; the nav is not. Drop the count first. */
+  .topbar-mark span {
+    display: none;
+  }
+  .topbar-mark strong {
+    font-size: 0.82rem;
+  }
+  .list-item {
+    gap: 0.6rem;
+    padding: 0.75rem 0.7rem;
+  }
+  .list-code {
+    min-width: 2.9rem;
+    font-size: 0.98rem;
+  }
+  .list-meta {
+    font-size: 0.68rem;
+  }
+  .list-status {
+    font-size: 0.68rem;
+  }
+}

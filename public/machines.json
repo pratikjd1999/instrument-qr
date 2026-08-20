@@ -1,0 +1,29 @@
+[
+  {
+    "code": "3087",
+    "name": "Distance Meter",
+    "calibrationDueDate": "2027-08-13",
+    "maintenanceDueDate": "2027-02-25",
+    "faultHistory": "Battery Cover Loose",
+    "usagePercent": 90,
+    "sample": true
+  },
+  {
+    "code": "1145",
+    "name": "Digital Torque Wrench",
+    "calibrationDueDate": "2026-09-04",
+    "maintenanceDueDate": "2026-11-19",
+    "faultHistory": "None recorded",
+    "usagePercent": 62,
+    "sample": true
+  },
+  {
+    "code": "2260",
+    "name": "Infrared Thermometer",
+    "calibrationDueDate": "2026-07-30",
+    "maintenanceDueDate": "2027-01-15",
+    "faultHistory": "Lens scratched, replaced 2026-03-11",
+    "usagePercent": 41,
+    "sample": true
+  }
+]
